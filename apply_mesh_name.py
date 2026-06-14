@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Apply Mesh Name",
     "author": "Mike Dizhur",
-    "version": (0, 5),
+    "version": (0, 6),
     "blender": (5, 1, 3),
     "location": "View3D > Object > Apply",
     "description": "Rename mesh to object name.",
@@ -24,18 +24,30 @@ class OBJECT_OT_applyname(Operator):
     bl_region_type = "UI"
     bl_options = {'REGISTER', 'UNDO'}
 
-    nameshort: bpy.props.BoolProperty(
+    prefer_short: bpy.props.BoolProperty(
         name="Prioritize short names",
         default=False,
         description="If mesh is linked, chooses the shortest name.",
         )
 
+    purge_data: bpy.props.BoolProperty(
+        name="Purge unused data",
+        default=False,
+        description="Unused data may prevent the plugin from changing"
+                    " the name, appending numeration."
+                    " Only purges unused data blocks.",
+        )
+
     def execute(self, context):
+        if self.purge_data:
+            bpy.ops.outliner.orphans_purge(do_local_ids=True,
+                                           do_linked_ids=False,
+                                           do_recursive=False)
         names = set()
         for obj in context.selected_objects:
             if obj.type == 'MESH':
                 if (obj.data.name not in names
-                        or (len(obj.data.name) > len(obj.name)) * self.nameshort):
+                        or (len(obj.data.name) > len(obj.name)) * self.prefer_short):
                     obj.data.name = obj.name
                     names.add(obj.data.name)
                 else:
